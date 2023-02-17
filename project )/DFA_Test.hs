@@ -111,12 +111,19 @@ createMappings s1 s2 =
             where 
                 no = fromJust $ elemIndex (head x) nameList
         m' (x, s)
-            | x == 1    = drop no1 $ take (no1+1) nameList                                          -- States of 1st NFA
-            | x == 2    = drop (no2 + length s1) $ take (no2 + length s1 + 1) nameList              -- States of the 2nd NFA
+            | x == 1    =                                                                           -- States of 1st NFA
+                let
+                    no1 = fromJust $ elemIndex s s1
+                in
+                    drop no1 $ take (no1+1) nameList   
+
+            | x == 2    =                                                                           -- States of the 2nd NFA
+                let
+                    no2 = fromJust $ elemIndex s s2
+                in
+                    drop (no2 + length s1) $ take (no2 + length s1 + 1) nameList
+
             | otherwise = ""                                                                        -- error
-            where
-                no1 = fromJust $ elemIndex s s1
-                no2 = fromJust $ elemIndex s s2
     in
         (m, m')
 
@@ -146,10 +153,46 @@ symbolToNFA regex =
             Nfa states symbols start final trans
 
 
+orNFA :: Eq a => NFA a String -> NFA a String -> NFA a String
+orNFA (Nfa states1 symbols1 start1 final1 trans1) (Nfa states2 symbols2 start2 final2 trans2) = 
+    let
+        (m, m')    = createMappings states1 states2
+        nameList = ['\128'..]
+
+        newStates1 = convertList states1 m' 1
+        newStates2 = convertList states2 m' 2
+        newStart1  = m' (1,start1)
+        newStart2  = m' (2,start2)
+        newFinal1  = convertList final1  m' 1
+        newFinal2  = convertList final2  m' 2
+        no         = length states1 + length states2
+        addStart   = drop no $ take (no+1) nameList
+
+        transNew st sm
+            | st == addStart && sm == Epsilon                           = newStart1 : [newStart2]
+            
+            | st `elem` newStates1 && sm `elem` symbols1 ++ [Epsilon]   = 
+                let
+                    (no, state) = m st
+                    result = convertList (trans1 state sm) m' 1
+                in result
+
+            | st `elem` newStates2 && sm `elem` symbols2 ++ [Epsilon]   = 
+                let
+                    (no, state) = m st
+                    result = convertList (trans2 state sm) m' 2
+                in result
+
+            | otherwise                                             = []
+
+    in
+        Nfa (newStates1 ++ newStates2 ++ [addStart]) (symbols1 ++ symbols2) addStart (newFinal1 ++ newFinal2) transNew
+
+
 andNFA :: Eq a => NFA a String -> NFA a String -> NFA a String
 andNFA (Nfa states1 symbols1 start1 final1 trans1) (Nfa states2 symbols2 start2 final2 trans2) = 
     let
-        (m, m')   = createMappings states1 states2
+        (m, m')    = createMappings states1 states2
 
         newStates1 = convertList states1 m' 1
         newStates2 = convertList states2 m' 2
@@ -181,6 +224,76 @@ andNFA (Nfa states1 symbols1 start1 final1 trans1) (Nfa states2 symbols2 start2 
     in
         Nfa (newStates1 ++ newStates2) (symbols1 ++ symbols2) newStart1 newFinal2 transNew
 
+
+kleeneNFA :: Eq a => NFA a String -> NFA a String
+kleeneNFA (Nfa states symbols start final trans) = 
+    let
+        (m, m')    = createMappings states []
+        nameList = ['\128'..]
+
+        newStates = convertList states m' 1
+        newStart  = m' (1,start)
+        newFinal  = convertList final  m' 1
+        no         = length states
+        addStart   = drop no $ take (no+1) nameList
+
+        transNew st sm
+            | st == addStart && sm == Epsilon                           = [newStart]
+            
+            | st `elem` newFinal && sm == Epsilon   = 
+                let
+                    (no, state) = m st
+                    result = convertList (trans state sm) m' 1
+                in result ++ [newStart]
+
+            | st `elem` newStates && sm `elem` symbols ++ [Epsilon]   = 
+                let
+                    (no, state) = m st
+                    result = convertList (trans state sm) m' 1
+                in result
+
+            | otherwise                                             = []
+
+    in
+        Nfa (newStates ++ [addStart]) symbols addStart newFinal transNew
+
+
+-- checkRegex :: String -> String -> Bool
+-- checkRegex regex input = 
+
+
+regexToNFA :: String -> NFA String String -> NFA String String
+regexToNFA [] curr = curr
+regexToNFA (x:xs) curr
+    | x == '+'  = regexToNFA (drop (rCount xs) xs) (curr `orNFA`  regexHelp xs)
+    | x == '*'  = regexToNFA (drop (rCount xs) xs) (curr `andNFA` regexHelp xs)
+   -- | otherwise = regexToNFA (drop (rCount xs) xs) (              regexHelp xs)
+
+
+regexHelp :: String -> NFA String String
+regexHelp (x:xs)
+    | null xs           = symbolToNFA [x]
+    | head xs == '*'    = kleeneNFA (symbolToNFA [x])
+    | otherwise         = symbolToNFA [x]
+
+rCount :: String -> Int
+rCount (x:xs)
+    | null xs           = 1
+    | head xs == '*'    = 2
+    | otherwise         = 1
+
+parseRegex :: String -> String -> [String]
+parseRegex (x:xs) s
+    | x == '('  = s : parseRegex xs ""
+    | x == ')'  =
+        case () of
+            ()  | null xs                           -> [s]
+                | head xs == '*' && null (tail xs)  -> [s++")*"]
+                | otherwise                         ->  (s++")*"++[head (tail xs)]) : parseRegex (tail $ tail xs) ""
+
+    | otherwise = parseRegex xs (s ++ [x])
+
+parseRegex [] s = [s]
 
 --                      [Transition symbol]                                                                     -- Finite set of symbols (stack alphabet)
 data PDA symbol state = Pda
@@ -308,7 +421,7 @@ transitionFA  "s1" (Symbol "a") = []
 transitionFA  "s1" Epsilon      = ["s1"]
 transitionFA _ _ = []
 
-testNFA3 = Nfa setOfStatesA setOfSymbolsA startStateA finalStatesA transitionFA
+testNFAA = Nfa setOfStatesA setOfSymbolsA startStateA finalStatesA transitionFA
 
 setOfStatesB  = ["s2","s3"]
 setOfSymbolsB = [Symbol "b"]
@@ -320,7 +433,7 @@ transitionFB  "s3" (Symbol "b") = []
 transitionFB  "s3" Epsilon      = ["s3"]
 transitionFB _ _ = []
 
-testNFA4 = Nfa setOfStatesB setOfSymbolsB startStateB finalStatesB transitionFB
+testNFAB = Nfa setOfStatesB setOfSymbolsB startStateB finalStatesB transitionFB
 
 setOfStatesC  = ["s2","s3"]
 setOfSymbolsC = [Symbol "c"]
