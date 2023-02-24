@@ -3,12 +3,17 @@ module DFA_Test where
 
 import Data.List
 import Data.Maybe
-
+import Data.Char
 
 -- Data type for epsilon transitions and normal transitions | isomorphic to Maybe
 data Transition a = Epsilon | Symbol a
     deriving (Show,Eq)
 
+data Tree a = Nil | Node a (Tree a) (Tree a)
+    deriving (Show,Eq)
+
+data Move = L | R
+    deriving (Show,Eq)
 
 hasAny [] _          = False             -- An empty search list: always false
 hasAny _ []          = False             -- An empty list to scan: always false
@@ -266,7 +271,7 @@ regexToNFA :: String -> NFA String String -> NFA String String
 regexToNFA [] curr = curr
 regexToNFA (x:xs) curr
     | x == '+'  = regexToNFA (drop (rCount xs) xs) (curr `orNFA`  regexHelp xs)
-    | x == '*'  = regexToNFA (drop (rCount xs) xs) (curr `andNFA` regexHelp xs)
+    | x == '.'  = regexToNFA (drop (rCount xs) xs) (curr `andNFA` regexHelp xs)
    -- | otherwise = regexToNFA (drop (rCount xs) xs) (              regexHelp xs)
 
 
@@ -294,6 +299,35 @@ parseRegex (x:xs) s
     | otherwise = parseRegex xs (s ++ [x])
 
 parseRegex [] s = [s]
+
+
+treeToNFA :: Tree String -> NFA String String
+treeToNFA (Node x y z)
+    | x == "+"  = orNFA      (treeToNFA y) (treeToNFA z)
+    | x == "."  = andNFA     (treeToNFA y) (treeToNFA z)
+    | x == "*"  = kleeneNFA  (treeToNFA y)
+    | otherwise = symbolToNFA x
+
+
+-- regexToTree :: String -> Tree String
+-- regexToTree regex =
+--     let
+--         (op,reg) = readUntil regex ".+*"
+--         leftRegex = drop (length reg) regex
+--         result = case [op] of
+--             "*"         -> Node "*" (Node reg Nil Nil) Nil
+--             _   ->
+--                 let 
+--                     (op2,reg2) = readUntil leftRegex ".+*"
+--                 in
+--                     Node [op] (Node reg Nil Nil) (Node reg2 Nil Nil)
+
+--     in
+
+readUntil :: String -> String -> (Char,String)
+readUntil (x:xs) symbols
+    | x `elem` symbols  = (x,"")
+    | otherwise         = (\(x,y) f -> (x,f y)) (readUntil xs symbols) ([x] ++)
 
 --                      [Transition symbol]                                                                     -- Finite set of symbols (stack alphabet)
 data PDA symbol state = Pda
@@ -350,8 +384,35 @@ pdaHelper (p:ps) trans input stack
     | snd p == Epsilon  = nub (pdaRun trans input (fst p) stack ++ pdaHelper ps trans input stack)
     | otherwise         = nub (pdaRun trans input (fst p) (snd p : stack) ++ pdaHelper ps trans input stack)
 
+
+    
+data TM symbol state = Tm 
+                        [state]                                     -- set of states
+                        [symbol]                                    -- input alphabet
+                        state                                       -- starting state
+                        state                                       -- accept state
+                        state                                       -- reject state
+                        ((state,symbol) -> (state,symbol,Move))     -- transition function
+                        ([symbol],[symbol])                         -- tape
+    
+
+-- IDEA
+-- Store the configuration of TM as (state,tape+head position)
+-- tape + head position as ([state],[state]) which is tape contents to the left and right of the head position.
+-- `tmRun` returns tm with its configuration. If tm enters accept or reject state it halts.
+-- `tmAccept` would just check if the current state in the configuration is an accept state or reject state.
+
+
+-- tmRun :: (Eq a, Eq b) => [a] -> TM a b -> TM a b
+-- tmRun input (Tm st abc start accept reject trans (l,r)) = tmRun' (Tm st abc start accept reject trans ())
+
+-- tmRun' :: (Eq a, Eq b) => [a] -> TM a b -> TM a b
+-- tmRun' input a = 
+
+
 -- TESTS
 
+tree1 = Node "+" (Node "." (Node "a" Nil Nil) (Node "b" Nil Nil)) (Node "." (Node "c" Nil Nil) (Node "*" (Node "d" Nil Nil) Nil))
 
 pdaSt = ["s1","s2","s3","s4"]
 pdaSm = [Symbol "0", Symbol "1"]
