@@ -1,0 +1,38 @@
+cabal-version:      2.4
+name:               projectDFA
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             Lukas-Rutkauskas
+maintainer:         lukasrutkauskas16@gmail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+library automatalib
+
+    -- Modules included in this executable, other than Main.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    exposed-modules: AutomataLibrary.DFA.DFA, AutomataLibrary.NFA.NFA, AutomataLibrary.PDA.PDA, AutomataLibrary.TM.TM, 
+        AutomataLibrary.Regex.Regex, AutomataLibrary.Misc.Data_types, AutomataLibrary.Misc.Helper_functions
+    build-depends:    base ^>=4.16.3.0,
+        megaparsec ^>=9.2.0,
+        text,
+        parsec
+    hs-source-dirs:   ./
+    default-language: GHC2021

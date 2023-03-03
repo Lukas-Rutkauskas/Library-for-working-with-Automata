@@ -472,18 +472,6 @@ pdaTr Epsilon (Symbol "$") "s4"       = []
 
 pdaTest = Pda pdaSt pdaSm pdaStSt pdaFSt pdaTr
 
-setOfStatesA  = ["s0","s1"]
-setOfSymbolsA = [Symbol "a"]
-startStateA   = "s0"
-finalStatesA  = ["s1"]
-transitionFA  "s0" (Symbol "a") = ["s1"]
-transitionFA  "s0" Epsilon      = ["s0"]
-transitionFA  "s1" (Symbol "a") = []
-transitionFA  "s1" Epsilon      = ["s1"]
-transitionFA _ _ = []
-
-testNFAA = Nfa setOfStatesA setOfSymbolsA startStateA finalStatesA transitionFA
-
 setOfStatesB  = ["s2","s3"]
 setOfSymbolsB = [Symbol "b"]
 startStateB   = "s2"
@@ -520,24 +508,6 @@ transitionFNew  "s2" (Symbol "b") = ["s3"]
 transitionFNew  "s2" Epsilon      = ["s2"]
 transitionFNew  "s3" (Symbol "b") = []
 transitionFNew  "s3" Epsilon      = ["s3"]
-
-
-setOfStates2  = ["s0","s1","s2"]
-setOfSymbols2 = [Symbol 0, Symbol 1]
-startState2   = "s0"
-finalStates2  = ["s2"]
-transitionF2 "s0" (Symbol 0) = ["s1"]
-transitionF2 "s0" (Symbol 1) = []
-transitionF2 "s0" Epsilon    = ["s0","s1"]
-transitionF2 "s1" (Symbol 0) = ["s1"]
-transitionF2 "s1" (Symbol 1) = ["s1","s2"]
-transitionF2 "s1" Epsilon    = ["s1"]
-transitionF2 "s2" (Symbol 0) = []
-transitionF2 "s2" (Symbol 1) = []
-transitionF2 "s2" Epsilon    = ["s2"]
-
--- NFA that accepts words comprised of 0s and 1s that end with a 1.
-testNFA = Nfa setOfStates2 setOfSymbols2 startState2 finalStates2 transitionF2
 
 
 setOfStates3  = ["s0","s1","s2","s3","s4"]

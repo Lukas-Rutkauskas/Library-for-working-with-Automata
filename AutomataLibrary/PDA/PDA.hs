@@ -2,6 +2,7 @@ module AutomataLibrary.PDA.PDA where
 
 
 import AutomataLibrary.Misc.Data_types
+import AutomataLibrary.Misc.Helper_functions
 import Data.List
 
 data PDA symbol state = Pda
@@ -17,8 +18,13 @@ pdaRun :: (Eq symbol, Eq state) => (Transition symbol -> Transition symbol -> st
         -> state                                                                                                            -- Start state
         -> [Transition symbol]                                                                                              -- Stack
         -> [state]                                                                                                          -- End states
-pdaRun _ [] start [] = [start]
-pdaRun trans [] start (y:ys) =
+pdaRun _ [] start [] = [start]                              -- input and stack are empty
+-- A PDA transition function can have 4 different variations:
+-- - Read leftmost input symbol and don't care about stack (one)
+-- - Read leftmost input symbol and match top of stack     (two)
+-- - Don't read input and don't care about the stack       (three)
+-- - Don't read input and match top of stack               (four)
+pdaRun trans [] start (y:ys) =                              -- input is empty
     let
         three   = trans Epsilon Epsilon start
         four    = trans Epsilon y start
@@ -26,7 +32,7 @@ pdaRun trans [] start (y:ys) =
         four'   = pdaHelper four trans [] ys
     in
         three' ++ four'
-pdaRun trans (x:xs) start []     = 
+pdaRun trans (x:xs) start []     =                          -- stack is empty
     let
         one     = trans x Epsilon start
         three   = trans Epsilon Epsilon start
@@ -34,7 +40,7 @@ pdaRun trans (x:xs) start []     =
         three'  = pdaHelper three trans (x:xs) []
     in
         one' ++ three'
-pdaRun trans (x:xs) start (y:ys) = 
+pdaRun trans (x:xs) start (y:ys) =                          -- input and stack are nonempty
     let
         one     = trans x Epsilon start
         two     = trans x y start
@@ -57,3 +63,8 @@ pdaHelper [] _ _ _ = []
 pdaHelper (p:ps) trans input stack 
     | snd p == Epsilon  = nub (pdaRun trans input (fst p) stack ++ pdaHelper ps trans input stack)
     | otherwise         = nub (pdaRun trans input (fst p) (snd p : stack) ++ pdaHelper ps trans input stack)
+
+
+pdaAccept :: (Eq symbol, Eq state) => PDA symbol state -> [Transition symbol] -> Bool
+pdaAccept (Pda _ _ start final trans) input = 
+    hasAny (pdaRun trans input start []) final

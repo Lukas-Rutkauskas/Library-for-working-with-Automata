@@ -1,10 +1,15 @@
 module AutomataLibrary.Regex.Regex where
 
 
+import Text.Megaparsec
+import Text.Parsec.Char
 import AutomataLibrary.NFA.NFA
 import AutomataLibrary.Misc.Data_types
 import Data.List
 import Data.Maybe
+import Data.Void
+
+type Parser = Parsec Void String
 
 createMappings :: [String] -> [String] -> (String -> (Int, String),(Int, String) -> String)
 createMappings s1 s2 = 
@@ -162,3 +167,32 @@ kleeneNFA (Nfa states symbols start final trans) =
 
     in
         Nfa (newStates ++ [addStart]) symbols addStart newFinal transNew
+
+
+parseRegex :: String -> Maybe (NFA String String)
+parseRegex str = parseMaybe regexParser str
+
+regexParser :: Parser (NFA String String)
+regexParser = choice $ map try [ parseSeq, parseStar, parseOr, oneChar ]
+
+parseSeq :: Parser (NFA String String)
+parseSeq = do
+  lhs <- regexParser
+  rhs <- regexParser
+  return $ andNFA lhs rhs
+
+parseStar :: Parser (NFA String String)
+parseStar = do
+  lhs <- regexParser
+  string "*"
+  return $ kleeneNFA lhs
+
+parseOr :: Parser (NFA String String)
+parseOr = do
+  lhs <- regexParser
+  string "|"
+  rhs <- regexParser
+  return $ orNFA lhs rhs
+
+oneChar :: Parser (NFA String String)
+oneChar = Text.Megaparsec.satisfy (/= '|' '*')
