@@ -1,5 +1,8 @@
 module AutomataLibrary.DFA.DFA where
 
+
+import AutomataLibrary.Misc.Helper_functions
+
 -- Data type of a Deterministic Finite Automata polymorphically parameterized
 -- with the type parameters 'symbol' and 'state', for the type of symbols and states respectively.
 
@@ -29,3 +32,11 @@ dfaAccept :: (Eq symbol, Eq state) => DFA symbol state      -- DFA
             -> Bool                                         -- Accept/Reject
 dfaAccept (Dfa _ _ start final trans) input = 
     dfaRun start input trans `elem` final
+
+dfaIntersect :: (Eq symbol, Eq state) => DFA symbol state -> DFA symbol state -> DFA symbol (state,state)
+dfaIntersect (Dfa states1 symbols1 start1 final1 trans1) (Dfa states2 symbols2 start2 final2 trans2) = 
+    Dfa states3 symbols1 (start1,start2) final3 trans3
+        where
+            states3        = cartProd states1 states2
+            final3         = cartProd final1  final2
+            trans3 (x,y) a = (trans1 x a, trans2 y a)

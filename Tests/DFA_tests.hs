@@ -18,6 +18,13 @@ dfa1 = Dfa [0,1,2,3,4] ['0','1'] 0 [3] delta
         delta 3 '1' = 2
         delta _ _   = 4 
 
+dfaz :: DFA Char Int
+dfaz = Dfa [0,1,2,3,4] ['0','1'] 0 [3] delta
+  where delta 0 '0' = 1
+        delta 1 '1' = 2
+        delta 2 '0' = 3
+        delta _ _   = 4
+
 test1 = TestCase (assertBool "010 should be accepted" (dfaAccept dfa1 "010"))
 test2 = TestCase (assertBool "1a01 should be rejected" (not $ dfaAccept dfa1 "1a010"))
 test3 = TestCase (assertBool "011010 should be accepted" (dfaAccept dfa1 "011010"))

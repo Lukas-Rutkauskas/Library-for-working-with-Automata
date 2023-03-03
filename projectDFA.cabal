@@ -33,6 +33,7 @@ library automatalib
     build-depends:    base ^>=4.16.3.0,
         megaparsec ^>=9.2.0,
         text,
-        parsec
+        parsec,
+        HUnit
     hs-source-dirs:   ./
     default-language: GHC2021
