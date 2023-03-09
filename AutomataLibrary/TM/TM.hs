@@ -44,6 +44,6 @@ tmMove hd (left,right) move = case move of
 
 
 tmAccept :: (Eq symbol, Eq state) => TM symbol state -> Bool
-tmAccept (Tm states alphabet start acc rej trans curr tape hd)
+tmAccept t@(Tm states alphabet start acc rej trans curr tape hd)
     | curr == acc || curr == rej    = curr == acc
-    | otherwise                     = tmAccept $ tmRun (Tm states alphabet start acc rej trans curr tape hd)
+    | otherwise                     = tmAccept $ tmRun t

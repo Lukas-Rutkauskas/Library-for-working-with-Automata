@@ -53,3 +53,21 @@ nfaAccept :: (Eq symbol, Eq state) => NFA symbol state                          
             -> Bool                                                                 -- Accept/Reject
 nfaAccept (Nfa _ _ start final trans) input = 
     hasAny (nfaRun trans input [start]) final
+
+
+nfaIntersect :: (Eq symbol, Eq state) => NFA symbol state -> NFA symbol state -> NFA symbol (state,state)
+nfaIntersect (Nfa states1 symbols1 start1 final1 trans1) (Nfa states2 symbols2 start2 final2 trans2) = 
+    Nfa states3 symbols1 (start1,start2) final3 trans3
+        where
+            states3        = cartProd states1 states2
+            final3         = cartProd final1  final2
+            trans3 (x,y) a = cartProd (trans1 x a) (trans2 y a)
+
+
+nfaUnion :: (Eq symbol, Eq state) => NFA symbol state -> NFA symbol state -> NFA symbol (state,state)
+nfaUnion (Nfa states1 symbols1 start1 final1 trans1) (Nfa states2 symbols2 start2 final2 trans2) = 
+    Nfa states3 symbols1 (start1,start2) final3 trans3
+        where
+            states3        = cartProd states1 states2
+            final3         = cartProd final1  states2 ++ cartProd states1 final2
+            trans3 (x,y) a = cartProd (trans1 x a) (trans2 y a)

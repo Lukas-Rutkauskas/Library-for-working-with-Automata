@@ -2,7 +2,7 @@ module AutomataLibrary.Regex.Regex where
 
 
 import Text.Megaparsec
-import Text.Parsec.Char
+import Text.Megaparsec.Char
 import AutomataLibrary.NFA.NFA
 import AutomataLibrary.Misc.Data_types
 import Data.List
@@ -46,7 +46,7 @@ convertList oglist mapping no =
     in
         newlist
 
-symbolToNFA :: String -> NFA String String
+symbolToNFA :: Char -> NFA Char String
 symbolToNFA regex =
         let
             states  = ["s0","s1"]
@@ -144,9 +144,9 @@ kleeneNFA (Nfa states symbols start final trans) =
 
         newStates = convertList states m' 1
         newStart  = m' (1,start)
-        newFinal  = convertList final  m' 1
         no         = length states
         addStart   = drop no $ take (no+1) nameList
+        newFinal  = convertList final  m' 1 ++ [addStart]
 
         transNew st sm
             | st == addStart && sm == Epsilon                           = [newStart]
@@ -169,30 +169,52 @@ kleeneNFA (Nfa states symbols start final trans) =
         Nfa (newStates ++ [addStart]) symbols addStart newFinal transNew
 
 
-parseRegex :: String -> Maybe (NFA String String)
+parseRegex :: String -> Maybe (NFA Char String)
 parseRegex str = parseMaybe regexParser str
 
-regexParser :: Parser (NFA String String)
-regexParser = choice $ map try [ parseSeq, parseStar, parseOr, oneChar ]
+regexParser :: Parser (NFA Char String)
+-- regexParser = choice $ map try [ parseSeq, parseStar, parseOr, oneChar, parseEmpty, parseBrackets ]
+regexParser = choice $ map try [ parseOr, parseSeq, parseStar, parseBrackets, oneChar ]
 
-parseSeq :: Parser (NFA String String)
+
+starParser :: Parser (NFA Char String)
+starParser = choice $ map try [ parseBrackets, oneChar ]
+
+seqParser :: Parser (NFA Char String)
+seqParser = choice $ map try [ parseStar, parseBrackets, oneChar ]
+
+orParser :: Parser (NFA Char String)
+orParser = choice $ map try [ parseStar, parseBrackets, oneChar ]
+
+bracketParser :: Parser (NFA Char String)
+bracketParser = choice $ map try [ parseOr, parseSeq, parseStar, oneChar ]
+
+
+parseBrackets :: Parser (NFA Char String)
+parseBrackets = do
+    char '('
+    body <- bracketParser
+    char ')'
+    return body
+
+parseSeq :: Parser (NFA Char String)
 parseSeq = do
-  lhs <- regexParser
+  lhs <- seqParser
   rhs <- regexParser
   return $ andNFA lhs rhs
 
-parseStar :: Parser (NFA String String)
+parseStar :: Parser (NFA Char String)
 parseStar = do
-  lhs <- regexParser
-  string "*"
+  lhs <- starParser
+  char '*'
   return $ kleeneNFA lhs
 
-parseOr :: Parser (NFA String String)
+parseOr :: Parser (NFA Char String)
 parseOr = do
-  lhs <- regexParser
-  string "|"
+  lhs <- orParser
+  char '|'
   rhs <- regexParser
   return $ orNFA lhs rhs
 
-oneChar :: Parser (NFA String String)
-oneChar = Text.Megaparsec.satisfy (/= '|' '*')
+oneChar :: Parser (NFA Char String)
+oneChar = symbolToNFA <$> Text.Megaparsec.satisfy (\c -> notElem c ['|','*','(',')'])

@@ -24,12 +24,13 @@ extra-source-files: CHANGELOG.md
 library automatalib
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules: AutomataLibrary.DFA.DFA, AutomataLibrary.NFA.NFA, AutomataLibrary.PDA.PDA, AutomataLibrary.TM.TM, 
+        AutomataLibrary.Regex.Regex, AutomataLibrary.Misc.Data_types, AutomataLibrary.Misc.Helper_functions
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    exposed-modules: AutomataLibrary.DFA.DFA, AutomataLibrary.NFA.NFA, AutomataLibrary.PDA.PDA, AutomataLibrary.TM.TM, 
-        AutomataLibrary.Regex.Regex, AutomataLibrary.Misc.Data_types, AutomataLibrary.Misc.Helper_functions
+    -- exposed-modules: AutomataLibrary.DFA.DFA, AutomataLibrary.NFA.NFA, AutomataLibrary.PDA.PDA, AutomataLibrary.TM.TM, 
+    --     AutomataLibrary.Regex.Regex, AutomataLibrary.Misc.Data_types, AutomataLibrary.Misc.Helper_functions
     build-depends:    base ^>=4.16.3.0,
         megaparsec ^>=9.2.0,
         text,
